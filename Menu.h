@@ -3,6 +3,8 @@
 
 #include <vector>
 #include <string>
+
+#include "AddressBook.h"
 #include "Contact.h"
 #include "Person.h"
 #include "Business.h"
@@ -11,9 +13,7 @@
 
 class Menu {
 private:
-    // Placeholder container for the backend functionality.
-    // In a fully integrated application, you might pass an 'AddressBook' manager class here instead.
-    std::vector<Contact*> contactList;
+    AddressBook book;
 
     // UI Display Helpers
     static void printHeader(const std::string& title) ;
@@ -38,6 +38,7 @@ public:
 
     // Main entry point for the console loop
     void run();
+    void saveToFile(const char* str);
 };
 
 #endif // MENU_H

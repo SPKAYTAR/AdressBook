@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 4.2)
-project(AdressBook)
+project(AddressBook)
 
 set(CMAKE_CXX_STANDARD 14)
 
 include_directories(.)
 
-add_executable(AdressBook
+add_executable(AddressBook
         AddressBook.cpp
         AddressBook.h
         Business.cpp
