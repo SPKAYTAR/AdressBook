@@ -2,19 +2,16 @@
 #include <iostream>
 #include <limits>
 
+#include "AddressBook.h"
+
 using namespace std;
 
 Menu::Menu() {
-    // Constructor: could load contacts from file automatically here via handleImportExport()
+    book.loadFromFile("contacts.csv"); // loads saved contacts on startup
+                                                  // silently skips if file doesn't exist yet
 }
 
-Menu::~Menu() {
-    // Clean up dynamically allocated memory
-    for (Contact* c : contactList) {
-        delete c;
-    }
-    contactList.clear();
-}
+Menu::~Menu() {}
 
 void Menu::printHeader(const string& title) {
     cout << "\n=============================================\n";
@@ -24,12 +21,10 @@ void Menu::printHeader(const string& title) {
 void Menu::pauseAndClear() {
     cout << "\nPress Enter to continue...";
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
-    // cin.get(); // Optional depending on how buffering is handled
-    
-    // Quick pseudo-clear for standard console
-    cout << string(50, '\n'); 
+
+    cout << string(50, '\n');
 }
-int Menu::getValidIntegerChoice(int min, int max) {
+int Menu::getValidIntegerChoice(int min, const int max) {
     int choice;
     while (true) {
         cout << "Enter your choice (" << min << "-" << max << "): ";
@@ -127,7 +122,8 @@ void Menu::handleAddContact() {
             string bday, rel;
             cout << "Birthday: "; getline(cin, bday);
             cout << "Relationship: "; getline(cin, rel);
-            contactList.push_back(new Person(name, phone, email, address, city, bday, rel));
+            auto* newPer = new Person(name, phone, email, address, city, bday, rel);
+            book.addContact(newPer);
             break;
         }
         case 2: {
@@ -135,7 +131,8 @@ void Menu::handleAddContact() {
             cout << "Company Name: "; getline(cin, comp);
             cout << "Job Title: "; getline(cin, title);
             cout << "Website: "; getline(cin, web);
-            contactList.push_back(new Business(name, phone, email, address, city, comp, title, web));
+            auto* newBus = new Business(name, phone, email, address, city, comp, title, web);
+            book.addContact(newBus);
             break;
         }
         case 3: {
@@ -143,7 +140,8 @@ void Menu::handleAddContact() {
             cout << "Service Type: "; getline(cin, service);
             cout << "Payment Terms: "; getline(cin, terms);
             cout << "Account Number: "; getline(cin, acc);
-            contactList.push_back(new Vendor(name, phone, email, address, city, service, terms, acc));
+            auto* newVend = new Vendor(name, phone, email, address, city, service, terms, acc);
+            book.addContact(newVend);
             break;
         }
         case 4: {
@@ -153,8 +151,10 @@ void Menu::handleAddContact() {
             cout << "Priority Level (e.g., 1-10): "; 
             cin >> prio;
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << "Notes: "; getline(cin, notes);
-            contactList.push_back(new EmergencyContact(name, phone, email, address, city, rel, prio, notes));
+            cout << "Notes: ";
+            getline(cin, notes);
+            auto* newEmer = new EmergencyContact(name, phone, email, address, city, rel, prio, notes);
+            book.addContact(newEmer);
             break;
         }
     }
@@ -164,34 +164,51 @@ void Menu::handleAddContact() {
 
 void Menu::handleEditContact() {
     printHeader("EDIT CONTACT");
-    cout << "[MISSING FUNCTIONALITY]: Backend logic to select a contact and modify their attributes is not yet implemented.\n";
-    cout << "Placeholder: Allow user to search/select a contact, choose an attribute, and update the string value.\n";
+
+    book.listContacts();
+    cout << endl;
+
+    int index;
+    cout << "Select contact index";
+    cin >> index;
+
+    book.editContact(index);
+
     pauseAndClear();
 }
 
 void Menu::handleDeleteContact() {
     printHeader("DELETE CONTACT");
-    cout << "[MISSING FUNCTIONALITY]: Backend logic to find and remove a contact from the data structure is not yet implemented.\n";
+
+    book.listContacts();
+    cout << endl;
+
+    int index;
+    cout << "Select contact index";
+    cin >> index;
+
+    book.deleteContact(index);
+
     pauseAndClear();
 }
 
 void Menu::handleViewContact() {
     printHeader("VIEW CONTACT DETAILS");
-    cout << "[MISSING FUNCTIONALITY]: Backend logic to search for a specific contact and call their display() method is not yet implemented.\n";
+
+    book.listContacts();
+    cout << endl;
+
+    int index;
+    cout << "Select contact index";
+    cin >> index;
+
+    book.viewContact(index);
+
     pauseAndClear();
 }
 
 void Menu::handleListContacts() {
-    printHeader("ALL CONTACTS");
-    // This is a basic implementation using the temporary vector.
-    if (contactList.empty()) {
-        cout << "No contacts found.\n";
-    } else {
-        for (size_t i = 0; i < contactList.size(); ++i) {
-            cout << "\n--- Contact #" << i + 1 << " (" << contactList[i]->getType() << ") ---\n";
-            contactList[i]->display();
-        }
-    }
+    book.listContacts();
     pauseAndClear();
 }
 
@@ -202,9 +219,73 @@ void Menu::handleSearchAndFilter() {
     cout << "3. Cancel\n";
     
     int choice = getValidIntegerChoice(1, 3);
+
+    if (choice == 1) {
+        printHeader("Select Search Mode");
+        int searchMode = getValidIntegerChoice(1,3);
+        switch (searchMode)
+        {
+            case 1:
+                {
+                    cout << "Enter contact name: ";
+                    string name;
+                    getline(cin, name);
+                    book.searchByName(name);
+                    break;
+                }
+            case 2:
+                {
+                    cout << "Enter contact Email: ";
+                    string email;
+                    getline(cin, email);
+                    book.searchByEmail(email);
+                    break;
+                }
+            case 3:
+                {
+                    cout << "Enter contact Phone: ";
+                    string phone;
+                    getline(cin, phone);
+                    book.searchByPhone(phone);
+                    break;
+                }
+        }
+    }
+    if (choice == 2)
+    {
+        printHeader("Select Filter Mode");
+        int  filterMode = getValidIntegerChoice(1, 3);
+        switch (filterMode)
+        {
+        case 1:
+            {
+                cout << "Enter contact type: ";
+                string type;
+                getline(cin, type);
+                book.filterByType(type);
+                break;
+            }
+        case 2:
+            {
+                cout << "Enter contact city: ";
+                string city;
+                getline(cin, city);
+                book.searchByEmail(city);
+                break;
+            }
+        case 3:
+            {
+                cout << "Enter contact tag: ";
+                string tag;
+                getline(cin, tag);
+                book.searchByPhone(tag);
+                break;
+            }
+        }
+    }
+
     if (choice == 3) return;
 
-    cout << "\n[MISSING FUNCTIONALITY]: Backend search algorithms (e.g., substring matching, type filtering) are not yet implemented.\n";
     pauseAndClear();
 }
 
@@ -215,9 +296,77 @@ void Menu::handleGroupingAndTagging() {
     cout << "3. Cancel\n";
     
     int choice = getValidIntegerChoice(1, 3);
+
+    book.listContacts();
+
+    switch (choice)
+    {
+        case 1:
+            {
+                book.listContacts();
+                cout << endl;
+
+                int index;
+                string group;
+
+                cout << "Select contact index: ";
+                cin >> index;
+                cin.ignore();
+
+                cout << "Enter group(Family, Work, Vendors): ";
+                getline(cin, group);
+
+                book.assignGroup(index, group);
+
+                break;
+            }
+        case 2:
+            {
+                cout << "Do you want to add(1) or remove(2) tag?";
+                int addRemove = getValidIntegerChoice(1, 2);
+
+                book.listContacts();
+                cout << endl;
+                switch (addRemove)
+                {
+                    case 1:
+                        {
+                            int index;
+                            string tag;
+
+                            cout << "Select contact index: ";
+                            cin >> index;
+                            cin.ignore();
+
+                            cout << "Enter tag: ";
+                            getline(cin, tag);
+
+                            book.addTag(index, tag);
+
+                            break;
+                        }
+                    case 2:
+                        {
+                            int index;
+                            string tag;
+
+                            cout << "Select contact index: ";
+                            cin >> index;
+                            cin.ignore();
+
+                            cout << "Enter tag: ";
+                            getline(cin, tag);
+
+                            book.addTag(index, tag);
+
+                            break;
+                        }
+                }
+            }
+    }
+
     if (choice == 3) return;
 
-    cout << "\n[MISSING FUNCTIONALITY]: Tagging and grouping data structures (like maps or vectors inside the Contact class) are not yet implemented.\n";
     pauseAndClear();
 }
 
@@ -228,9 +377,16 @@ void Menu::handleImportExport() {
     cout << "3. Cancel\n";
     
     int choice = getValidIntegerChoice(1, 3);
-    if (choice == 3) return;
 
-    cout << "\n[MISSING FUNCTIONALITY]: File I/O operations (fstream) for parsing and writing contact data are not yet implemented.\n";
+    switch (choice)
+    {
+        case 1: book.saveToFile("contacts.csv");
+                break;
+        case 2: book.loadFromFile("contacts.csv");
+                break;
+        default: return;
+    }
+
     pauseAndClear();
 }
 
@@ -241,9 +397,23 @@ void Menu::handleReports() {
     cout << "3. Display group summaries\n";
     cout << "4. Cancel\n";
 
-    int choice = getValidIntegerChoice(1, 4);
-    if (choice == 4) return;
+    const int choice = getValidIntegerChoice(1, 4);
 
-    cout << "\n[MISSING FUNCTIONALITY]: Backend aggregation and reporting logic is not yet implemented.\n";
+    switch (choice)
+    {
+        case 1: book.listContactsByType();
+                break;
+        case 2: book.showMissingInfo();
+                break;
+        case 3: book.displayGroupSummaries();
+                break;
+        default: return;
+    }
+
     pauseAndClear();
 }
+
+void Menu::saveToFile(const char* str) {
+    book.saveToFile(str);
+}
+
